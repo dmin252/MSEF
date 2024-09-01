@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from thermal_logic import ThermalSimulation
-from visualization import HeatingVisualizer
+from MSEF_git.visualization import HeatingVisualizer
 from utils import validate_input, calculate_power_consumption, format_results
 
 def main():
