@@ -87,23 +87,4 @@ def main():
     power_modern = calculate_power_consumption(
         volume, temp_diff, modern_metrics['efficiency']
     )
-    
-    # Calculate emissions
-    duration = 24  # hours
-    hypocaust_emissions = hypocaust_sim.calculate_co2_emissions(power_hypocaust, duration)
-    modern_emissions = modern_sim.calculate_co2_emissions(power_modern, duration)
-    
-    # Display emissions comparison
-    st.subheader("Daily CO2 Emissions (kg)")
-    emissions_data = {
-        'Hypocaust': hypocaust_emissions,
-        'Modern': modern_emissions
-    }
-    
-    for system, emissions in emissions_data.items():
-        st.write(f"\n{system} System:")
-        for source, value in emissions.items():
-            st.write(f"- {source.title()}: {value:.2f} kg CO2")
-
-if __name__ == "__main__":
-    main()
+ 
