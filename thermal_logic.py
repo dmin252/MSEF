@@ -22,6 +22,7 @@ class ThermalSimulation:
         
         self.system_type = system_type
         self.grid_size = (50, 50)
+        self.time_series_data = []
         
     def calculate_heat_transfer(self, initial_temp, time_steps):
         """Calculate heat transfer using finite difference method"""
@@ -31,6 +32,7 @@ class ThermalSimulation:
         
         # Initialize temperature grid based on system type
         T = np.ones(self.grid_size) * initial_temp
+        self.time_series_data = []  # Reset time series data
         
         # Apply boundary conditions based on system type
         if self.system_type == 'hypocaust':
@@ -47,7 +49,7 @@ class ThermalSimulation:
             radiator_height = self.grid_size[0] // 3
             T[radiator_height:2*radiator_height, 0:2] = self.properties['source_temp']
         
-        # Time evolution with improved physics
+        # Time evolution with improved physics and time series tracking
         for t in range(time_steps):
             T_new = T.copy()
             for i in range(1, self.grid_size[0]-1):
@@ -69,6 +71,16 @@ class ThermalSimulation:
                         )
             T = T_new
             
+            # Store time series data every 5 steps
+            if t % 5 == 0:
+                metrics = self.calculate_efficiency(T)
+                self.time_series_data.append({
+                    'time_step': t,
+                    'mean_temperature': metrics['mean_temperature'],
+                    'uniformity': metrics['uniformity'],
+                    'efficiency': metrics['efficiency']
+                })
+            
         return T
     
     def calculate_efficiency(self, temperature_distribution):
@@ -84,6 +96,10 @@ class ThermalSimulation:
             'uniformity': temp_uniformity,
             'efficiency': system_factor * temp_uniformity * (mean_temp/self.properties['source_temp'])
         }
+    
+    def get_time_series_data(self):
+        """Return time series data for analysis"""
+        return self.time_series_data
     
     def calculate_co2_emissions(self, power_consumption, duration):
         """Calculate CO2 emissions based on power consumption"""

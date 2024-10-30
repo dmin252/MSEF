@@ -46,18 +46,18 @@ def main():
         
         # Display selected material properties
         hypocaust_props = material_db.get_building_material(hypocaust_material)
-        if hypocaust_props:
-            st.write("Hypocaust Material Properties:")
-            st.write(f"- Thermal Conductivity: {hypocaust_props['thermal_conductivity']} W/mK")
-            st.write(f"- Thermal Resistance: {hypocaust_props['thermal_resistance']} m²K/W")
-            st.write(f"- Emissivity: {hypocaust_props['emissivity']}")
-        
         modern_props = material_db.get_building_material(modern_material)
-        if modern_props:
-            st.write("Modern Material Properties:")
-            st.write(f"- Thermal Conductivity: {modern_props['thermal_conductivity']} W/mK")
-            st.write(f"- Thermal Resistance: {modern_props['thermal_resistance']} m²K/W")
-            st.write(f"- Emissivity: {modern_props['emissivity']}")
+        
+        if hypocaust_props and modern_props:
+            cols = st.columns(2)
+            with cols[0]:
+                st.write("Hypocaust Material:")
+                st.write(f"- Conductivity: {hypocaust_props['thermal_conductivity']} W/mK")
+                st.write(f"- Resistance: {hypocaust_props['thermal_resistance']} m²K/W")
+            with cols[1]:
+                st.write("Modern Material:")
+                st.write(f"- Conductivity: {modern_props['thermal_conductivity']} W/mK")
+                st.write(f"- Resistance: {modern_props['thermal_resistance']} m²K/W")
 
     # Simulation settings in an expander
     with st.sidebar.expander("Simulation Settings", expanded=True):
@@ -70,10 +70,6 @@ def main():
         # Get material properties for simulations
         hypocaust_props = material_db.get_building_material(hypocaust_material).copy()
         modern_props = material_db.get_building_material(modern_material).copy()
-        
-        # Calculate thermal diffusivity for both materials
-        hypocaust_props['thermal_diffusivity'] = material_db.calculate_thermal_diffusivity(hypocaust_props)
-        modern_props['thermal_diffusivity'] = material_db.calculate_thermal_diffusivity(modern_props)
         
         # Add source temperature to properties
         hypocaust_props['source_temp'] = source_temp
@@ -91,16 +87,46 @@ def main():
             system_type='modern'
         )
 
-        # Display results in two columns
+        # Run simulations and get results
+        hypocaust_temp = hypocaust_sim.calculate_heat_transfer(initial_temp, time_steps)
+        modern_temp = modern_sim.calculate_heat_transfer(initial_temp, time_steps)
+        
+        # Get time series data
+        hypocaust_time_series = hypocaust_sim.get_time_series_data()
+        modern_time_series = modern_sim.get_time_series_data()
+        
+        # Create visualizer
+        visualizer = HeatingVisualizer()
+        
+        # Time Series Analysis Section
+        st.header("Time Series Analysis")
+        
+        # Plot time series data
+        st.plotly_chart(
+            visualizer.create_time_series_plot(
+                hypocaust_time_series,
+                modern_time_series
+            ),
+            use_container_width=True
+        )
+        
+        # Plot efficiency radar chart using latest data
+        st.plotly_chart(
+            visualizer.create_efficiency_radar_plot(
+                hypocaust_time_series[-1],
+                modern_time_series[-1]
+            ),
+            use_container_width=True
+        )
+        
+        # System Comparisons
         col1, col2 = st.columns(2)
-
+        
         with col1:
             st.subheader("Hypocaust System")
-            hypocaust_temp = hypocaust_sim.calculate_heat_transfer(initial_temp, time_steps)
             hypocaust_metrics = hypocaust_sim.calculate_efficiency(hypocaust_temp)
             
             # System diagram
-            visualizer = HeatingVisualizer()
             st.image(visualizer.create_system_diagram('hypocaust'))
             
             # 2D heatmap
@@ -115,14 +141,13 @@ def main():
             ))
             
             # Metrics
-            st.write("System Metrics:")
+            st.write("Final Metrics:")
             hypocaust_formatted = format_results(hypocaust_metrics)
             for key, value in hypocaust_formatted.items():
                 st.write(f"- {key.title()}: {value}")
 
         with col2:
             st.subheader("Modern Heating System")
-            modern_temp = modern_sim.calculate_heat_transfer(initial_temp, time_steps)
             modern_metrics = modern_sim.calculate_efficiency(modern_temp)
             
             # System diagram
@@ -140,7 +165,7 @@ def main():
             ))
             
             # Metrics
-            st.write("System Metrics:")
+            st.write("Final Metrics:")
             modern_formatted = format_results(modern_metrics)
             for key, value in modern_formatted.items():
                 st.write(f"- {key.title()}: {value}")
@@ -151,6 +176,7 @@ def main():
         volume = room_size['length'] * room_size['width'] * room_size['height']
         temp_diff = source_temp - initial_temp
         
+        # Calculate power consumption using final efficiency
         power_hypocaust = calculate_power_consumption(
             volume, temp_diff, hypocaust_metrics['efficiency']
         )
@@ -165,23 +191,17 @@ def main():
         
         # Display emissions comparison
         st.subheader("Daily CO2 Emissions (kg)")
-        emissions_data = {
-            'Hypocaust': hypocaust_emissions,
-            'Modern': modern_emissions
-        }
+        cols = st.columns(2)
         
-        for system, emissions in emissions_data.items():
-            st.write(f"\n{system} System:")
-            for source, value in emissions.items():
+        with cols[0]:
+            st.write("Hypocaust System:")
+            for source, value in hypocaust_emissions.items():
                 st.write(f"- {source.title()}: {value:.2f} kg CO2")
-
-        # Material Comparison
-        st.header("Material Comparison")
-        comparison = material_db.get_material_comparison(hypocaust_material, modern_material)
-        if comparison:
-            st.write("Relative Performance (Hypocaust vs Modern):")
-            for key, value in comparison.items():
-                st.write(f"- {key.replace('_', ' ').title()}: {value:.2f}x")
+                
+        with cols[1]:
+            st.write("Modern System:")
+            for source, value in modern_emissions.items():
+                st.write(f"- {source.title()}: {value:.2f} kg CO2")
 
 if __name__ == "__main__":
     main()
