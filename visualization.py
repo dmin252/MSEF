@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
+import plotly.graph_objects as go
 import os
 
 class HeatingVisualizer:
@@ -175,5 +176,38 @@ class HeatingVisualizer:
         # Convert plot to image
         fig = plt.gcf()
         plt.close()
+        
+        return fig
+
+    def create_3d_heatmap(self, temperature_data, room_dimensions):
+        """Create 3D surface plot of temperature distribution"""
+        # Create coordinate grids
+        x = np.linspace(0, room_dimensions[0], temperature_data.shape[1])
+        y = np.linspace(0, room_dimensions[1], temperature_data.shape[0])
+        X, Y = np.meshgrid(x, y)
+        
+        # Create 3D surface plot
+        fig = go.Figure(data=[go.Surface(
+            x=X,
+            y=Y,
+            z=temperature_data,
+            colorscale='RdYlBu_r',
+            colorbar=dict(title='Temperature (°C)')
+        )])
+        
+        # Update layout for better visualization
+        fig.update_layout(
+            title='3D Temperature Distribution',
+            scene=dict(
+                xaxis_title='Room Length (m)',
+                yaxis_title='Room Width (m)',
+                zaxis_title='Temperature (°C)',
+                camera=dict(
+                    eye=dict(x=1.5, y=1.5, z=1.2)
+                )
+            ),
+            width=800,
+            height=600
+        )
         
         return fig
