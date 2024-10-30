@@ -1,0 +1,13 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Room outline -->
+  <rect x="50" y="50" width="700" height="300" fill="none" stroke="black"/>
+  
+  <!-- Radiator -->
+  <rect x="100" y="100" width="50" height="200" fill="red" stroke="black"/>
+  
+  <!-- Heat flow indicators -->
+  <path d="M160,120 L200,110" stroke="red" stroke-width="2"/>
+  <path d="M160,160 L200,150" stroke="red" stroke-width="2"/>
+  <path d="M160,200 L200,190" stroke="red" stroke-width="2"/>
+  <path d="M160,240 L200,230" stroke="red" stroke-width="2"/>
+</svg>
