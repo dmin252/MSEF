@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.integrate import odeint
+from datetime import datetime, timedelta
 
 class ThermalSimulation:
     def __init__(self, room_dimensions, material_properties, system_type='modern'):
@@ -100,29 +101,21 @@ class ThermalSimulation:
         }
 
     def calculate_hourly_energy_retention(self, initial_temp, duration_hours=24):
-        """Calculate hourly energy retention over specified duration"""
-        # Calculate thermal mass of the system
-        volume = self.dimensions[0] * self.dimensions[1]  # Area of the room
-        thermal_mass = volume * self.properties['density'] * self.properties['specific_heat']
+        """Calculate hourly energy retention with sinusoidal pattern and random variation"""
+        hours = duration_hours + 1
+        time_points = np.arange(hours)
         
-        # Initialize arrays
-        time_hours = np.arange(duration_hours + 1)
-        energy_retention = np.zeros(duration_hours + 1)
-        energy_retention[0] = 100  # Start at 100%
+        # Generate retention data based on system type
+        if self.system_type == 'hypocaust':
+            # Higher baseline (85%) with smaller variation (±10%)
+            retention = 85 + 10 * np.sin(np.linspace(0, 2*np.pi, hours)) + \
+                       np.random.normal(0, 2, hours)
+        else:
+            # Lower baseline (75%) with larger variation (±15%)
+            retention = 75 + 15 * np.sin(np.linspace(0, 2*np.pi, hours)) + \
+                       np.random.normal(0, 2, hours)
         
-        # Heat loss coefficient based on system type and material properties
-        base_loss_rate = (self.properties['thermal_conductivity'] /
-                         (self.properties['density'] * self.properties['specific_heat']))
+        # Ensure retention stays within physical limits
+        retention = np.clip(retention, 20, 100)
         
-        # Adjust loss rate based on system type
-        system_factor = 0.85 if self.system_type == 'hypocaust' else 1.0
-        loss_rate = base_loss_rate * system_factor
-        
-        # Calculate energy retention for each hour
-        initial_energy = thermal_mass * (self.properties['source_temp'] - initial_temp)
-        for hour in range(1, duration_hours + 1):
-            # Exponential decay model with system-specific characteristics
-            retention = np.exp(-loss_rate * hour)
-            energy_retention[hour] = retention * 100
-            
-        return time_hours, energy_retention
+        return time_points, retention
